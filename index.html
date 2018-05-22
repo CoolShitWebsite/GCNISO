@@ -1,0 +1,123 @@
+<html>
+<head>
+<link rel="stylesheet" href="./assets/stylesheet.css"/>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="./assets/jquery.playSound.js"></script>
+<script src="./assets/keynavigator-min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gamecube ISOs</title>
+</head>
+<body>
+
+<!-- Gamecube Boot -->
+<video id="boot" playsinline autoplay preload="auto" height=100%>
+	<source type="video/mp4" src="./assets/boot.mp4">
+</video>
+<!-- Music -->
+<audio id="music" loop>
+  <source src="./assets/music.mp3" type="audio/mpeg">
+</audio>
+
+
+<div class="outer">
+		<div class="middle">
+			<div class="inner">
+				<ul class="letters">				
+				</ul>
+			</div>
+		</div>
+	</div>
+
+<script>
+if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+	//$('#boot')[0].src = './assets/boot.small.mp4';
+}
+bootEnd = false,
+	processEnd = false;
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+$('#boot').onplaying = function() {
+	alert("The video is now playing");
+};
+play = (snd) => $.playSound('./assets/' + snd + '.mp3');
+var games;
+$(document).ready(function() {
+	$('#boot').on('playing', function(ev) {
+	console.log('wowzers');
+	$.getJSON('./assets/games.json', async function(json) {
+		games = json.games;
+	}).done(async function() {
+		console.log('dirty work');
+		await initGameTabs();
+		await addGames();
+		//await sleep(10000);
+		console.log('done');
+		if (bootEnd === true) {
+			$('#boot').fadeOut();
+			$('#music')[0].play();
+		}
+		window.processEnd = true;
+	});
+	});
+	$('#boot').on('ended', function(ev) {
+		if (processEnd === true) {
+			$('#boot').fadeOut();
+			$('#music')[0].play();
+		}
+		window.bootEnd = true;
+	});
+});
+
+
+
+  
+function initGameTabs(){
+j=1;
+var alphabet = '0ABCDEFGHIJKLMNOPRSTUVWXYZ'.split('');
+for (i = 0; i < alphabet.length; i++) {
+	if (j===4) j=1;
+	l = alphabet[i];
+	if (l==='0') {n='#'} else {n=l};
+	$('ul.letters').append('<li class="float'+j+'"><button id="'+l+'-MENU" onmouseover="menuHoverSFX(this)" onclick="menuSFX(this)" class="accordion">Letter "'+n+'" Games</button><div id="'+l+'-GAMES" class="panel"><p><ul></ul></p></div></li>');
+ j++;
+}
+	acc = $('.accordion');
+for (i = 0; i < acc.length; i++) {
+  acc[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var panel = this.nextElementSibling;
+    if (panel.style.maxHeight){
+      panel.style.maxHeight = null;
+    } else {
+      panel.style.maxHeight = panel.scrollHeight + "px";
+    } 
+  });
+}
+}
+
+function menuHoverSFX(el){
+	el = $(el)[0]
+	px = $(el.nextSibling).css('max-height');
+	if (px==='0px') return play('Move');
+}
+
+function menuSFX(el){
+	el = $(el)[0]
+	px = $(el.nextSibling).css('max-height');
+	if (px==='0px') return play('MenuHighlight');
+	return play('MenuBack');
+}
+
+function addGames(){
+	for (i = 0; i < games.length; i++) { 
+		game = games[i];
+		id = game.name.charAt(0).toUpperCase();
+		if (/^\d/g.test(id)) id = '0';
+		$('#'+id+'-GAMES ul').append('<li><a onmouseover="play(\'Move\')" onclick="play(\'GameLaunch\')" href="https://archive.org/download/gamecubenaiso/'+game.filename+'">'+game.name+'</a></li>');
+	}
+}
+setInterval(function(){ $('.sound-player').remove(); }, 60000);
+
+</script>
